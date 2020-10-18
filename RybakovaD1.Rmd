@@ -1,5 +1,5 @@
 ---
-title: "Rybakova1,2"
+title: "Rybakova1,2,3,4"
 output:
   word_document: default
   html_document: default
@@ -13,11 +13,12 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 #Download file to the table. Source file is 'D.csv'
 f <- read.csv2('D.csv', header = TRUE, encoding = 'UNICOD')
+f <- f[,-1]
 #Connect library
 library (dplyr)
 #Have a look at the data
 glimpse(f) 
-#Висновок: 132 спостережень та 17 змінних.
+#Висновок: 132 спостережень та 16 змінних.
 ```
 #Visualising
 ```{r}
@@ -40,6 +41,8 @@ hist(f$TH119, col = 'green', main = 'TH119', xlab = 'Value')
 hist(f$TH59, col = 'pink', main = 'TH59', xlab = 'Value')
 hist(f$S, col = 'brown', main = 'S', xlab = 'Value')
 #Висновок: розподіли змінних Life, AM, BMI, TotalExpend, TH59, S є близькими до нормального.
+```
+```{r}
 #Box-plot
 par(mfrow = c(2, 4))
 boxplot(f$Life,  main = 'Life')
@@ -69,55 +72,106 @@ d=describe(f) #Інакше describe не запускається
 #Fill n/a with average
 ```{r}
 f_fill <- f
-#f_fill$Life <- ifelse(is.na(f$Life),round(mean(f$Life,na.rm = TRUE)),f$Life)
-#f_fill$AM <- ifelse(is.na(f$AM),round(mean(f$AM,na.rm = TRUE)),f$AM)
 f_fill$ID <- ifelse(is.na(f$ID),round(mean(f$ID,na.rm = TRUE)),f$ID)
-#f_fill$HepB <- ifelse(is.na(f$HepB),round(mean(f$HepB,na.rm = TRUE)),f$HepB)
 f_fill$Measles <- ifelse(is.na(f$Measles),round(mean(f$Measles,na.rm = TRUE)),f$Measles)
-#f_fill$BMI <- ifelse(is.na(f$BMI),round(mean(f$BMI,na.rm = TRUE)),f$BMI)
 f_fill$U5D <- ifelse(is.na(f$U5D),round(mean(f$U5D,na.rm = TRUE)),f$U5D)
-#f_fill$Polio <- ifelse(is.na(f$Polio),round(mean(f$Polio,na.rm = TRUE)),f$Polio)
-#f_fill$TotalExpend <- ifelse(is.na(f$TotalExpend),round(mean(f$TotalExpend,na.rm = TRUE)),f$TotalExpend)
-#f_fill$Diphth <- ifelse(is.na(f$Diphth),round(mean(f$Diphth,na.rm = TRUE)),f$Diphth)
-#f_fill$HIV <- ifelse(is.na(f$HIV),round(mean(f$HIV,na.rm = TRUE)),f$HIV)
-#f_fill$GDP <- ifelse(is.na(f$GDP),round(mean(f$GDP,na.rm = TRUE)),f$GDP)
-#f_fill$P <- ifelse(is.na(f$P),round(mean(f$P,na.rm = TRUE)),f$P)
-#f_fill$TH119 <- ifelse(is.na(f$TH119),round(mean(f$TH119,na.rm = TRUE)),f$TH119)
-#f_fill$TH59 <- ifelse(is.na(f$TH59),round(mean(f$TH59,na.rm = TRUE)),f$TH59)
-#f_fill$S <- ifelse(is.na(f$S),round(mean(f$S,na.rm = TRUE)),f$S)
 f <- f_fill
 h=describe(f_fill)
 #Висновок: пропуски заповнені середніми значеннями змінних.
 ```
+#Log
+```{r}
+f_log <- f
+f_log$AM <- log(f$AM, )
+f_log$ID <- log(f$ID, )
+f_log$HepB <- log(f$HepB, )
+f_log$Measles <- log(f$Measles, )
+f_log$BMI <- log(f$BMI, )
+f_log$U5D <- log(f$U5D, )
+f_log$Polio <- log(f$Polio, )
+f_log$Diphth<- log(f$Diphth, )
+f_log$HIV <- log(f$HIV, )
+f_log$GDP <- log(f$GDP, )
+f_log$P <- log(f$P, )
+f_log$TH119 <- log(f$TH119, )
+f<- f_log 
+```
+```{r}
+#Visualising
+par(mfrow = c(2, 4)) 
+hist(f$Life, col = 'blue', main = 'Life', xlab = 'Value')
+hist(f$AM, col = 'red', main = 'AM', xlab = 'Value')
+hist(f$ID, col = 'green', main = 'ID', xlab = 'Value')
+hist(f$HepB, col = 'yellow', main = 'HepB', xlab = 'Value')
+hist(f$Measles, col = 'green', main = 'Measles', xlab = 'Value')
+hist(f$BMI, col = 'blue', main = 'BMI', xlab = 'Value')
+hist(f$U5D, col = 'pink', main = 'U5D', xlab = 'Value')
+hist(f$Polio, col = 'red', main = 'Polio', xlab = 'Value')
+hist(f$TotalExpend, col = 'pink', main = 'TotalExpend', xlab = 'Value')
+hist(f$Diphth, col = 'brown', main = 'Diphth', xlab = 'Value')
+hist(f$HIV, col = 'blue', main = 'HIV', xlab = 'Value')
+hist(f$GDP, col = 'green', main = 'GDP', xlab = 'Value')
+hist(f$P, col = 'yellow', main = 'P', xlab = 'Value')
+hist(f$TH119, col = 'green', main = 'TH119', xlab = 'Value')
+hist(f$TH59, col = 'pink', main = 'TH59', xlab = 'Value')
+hist(f$S, col = 'brown', main = 'S', xlab = 'Value')
+#Висновок: розподіли змінних Life, AM, BMI, TotalExpend, TH59, S є близькими до нормального.
+```
+```{r}
+#Box-plot
+par(mfrow = c(2, 4))
+boxplot(f$Life,  main = 'Life')
+boxplot(f$AM, main = 'AM')
+boxplot(f$ID, main = 'ID')
+boxplot(f$HepB, main = 'HepB')
+boxplot(f$Measles, main = 'Measles')
+boxplot(f$BMI,  main = 'BMI')
+boxplot(f$U5D, main = 'U5D')
+boxplot(f$Polio, main = 'Polio')
+boxplot(f$TotalExpend, main = 'TotalExpend')
+boxplot(f$Diphth, main = 'Diphth')
+boxplot(f$HIV,  main = 'HIV')
+boxplot(f$GDP, main = 'GDP')
+boxplot(f$P, main = 'P')
+boxplot(f$TH119, main = 'TH119')
+boxplot(f$TH59, main = 'TH59')
+boxplot(f$S, main = 'S')
+#Висновок: змінні AM, HepB, BMI, Polio, TotalExpend, Diphth, HIV, P, TH119 мають викиди. Змінні ID, Measles, U5D та GDP після логарифмування звільнилися від викидів.
+```
 #Replace ejections (outside the three sigma) with boundary values.
 ```{r}
 f_ej <- f
-#f_ej$Life <- ifelse(f$Life < mean(f$Life) + sd(f$Life)*3, f$Life,mean(f$Life) + sd(f$Life)*3)
 f_ej$AM <- ifelse(f$AM < mean(f$AM) + sd(f$AM)*3, f$AM,mean(f$AM) + sd(f$AM)*3)
-f_ej$ID <- ifelse(f$ID < mean(f$ID) + sd(f$ID)*3, f$ID,mean(f$ID) + sd(f$ID)*3)
+#f_ej$ID <- ifelse(f$ID < mean(f$ID) + sd(f$ID)*3, f$ID,mean(f$ID) + sd(f$ID)*3)
 f_ej$HepB <- ifelse(f$HepB < mean(f$HepB) + sd(f$HepB)*3, f$HepB,mean(f$HepB) + sd(f$HepB)*3)
-f_ej$Measles <- ifelse(f$Measles < mean(f$Measles) + sd(f$Measles)*3, f$Measles,mean(f$Measles) + sd(f$Measles)*3)
-#f_ej$BMI <- ifelse(f$BMI < mean(f$BMI) + sd(f$BMI)*3, f$BMI,mean(f$BMI) + sd(f$BMI)*3)
-f_ej$U5D <- ifelse(f$U5D < mean(f$U5D) + sd(f$U5D)*3, f$U5D,mean(f$U5D) + sd(f$U5D)*3)
+#f_ej$Measles <- ifelse(f$Measles < mean(f$Measles) + sd(f$Measles)*3, f$Measles,mean(f$Measles) + sd(f$Measles)*3)
+#f_ej$U5D <- ifelse(f$U5D < mean(f$U5D) + sd(f$U5D)*3, f$U5D,mean(f$U5D) + sd(f$U5D)*3)
+f_ej$BMI <- ifelse(f$BMI < mean(f$BMI) + sd(f$BMI)*3, f$BMI,mean(f$BMI) + sd(f$BMI)*3)
 f_ej$Polio <- ifelse(f$Polio < mean(f$Polio) + sd(f$Polio)*3, f$Polio,mean(f$Polio) + sd(f$Polio)*3)
 f_ej$TotalExpend <- ifelse(f$TotalExpend < mean(f$TotalExpend) + sd(f$TotalExpend)*3, f$TotalExpend,mean(f$TotalExpend) + sd(f$TotalExpend)*3)
 f_ej$Diphth <- ifelse(f$Diphth < mean(f$Diphth) + sd(f$Diphth)*3, f$Diphth,mean(f$Diphth) + sd(f$Diphth)*3)
 f_ej$HIV <- ifelse(f$HIV < mean(f$HIV) + sd(f$HIV)*3, f$HIV,mean(f$HIV) + sd(f$HIV)*3)
-f_ej$GDP <- ifelse(f$GDP < mean(f$GDP) + sd(f$GDP)*3, f$GDP,mean(f$GDP) + sd(f$GDP)*3)
+#f_ej$GDP <- ifelse(f$GDP < mean(f$GDP) + sd(f$GDP)*3, f$GDP,mean(f$GDP) + sd(f$GDP)*3)
 f_ej$P <- ifelse(f$P < mean(f$P) + sd(f$P)*3, f$P,mean(f$P) + sd(f$P)*3)
 f_ej$TH119 <- ifelse(f$TH119 < mean(f$TH119) + sd(f$TH119)*3, f$TH119,mean(f$TH119) + sd(f$TH119)*3)
-#f_ej$TH59 <- ifelse(f$TH59 < mean(f$TH59) + sd(f$TH59)*3, f$TH59,mean(f$TH59) + sd(f$TH59)*3)
-#f_ej$S <- ifelse(f$S < mean(f$S) + sd(f$S)*3, f$S,mean(f$S) + sd(f$S)*3)
 f <- f_ej
 #Висновок: для корекції викидів здійснене заповнення граничними значеннями.
 ```
 #Correlations
 ```{r}
-pairs.panels(f, lm=TRUE, 
-             method = "pearson", 
+f1 <- c(1,2,3,4,5,6,7,8)
+c_f1 <- f[f1]
+pairs.panels(c_f1, lm=TRUE, # linear fit
+             method = "pearson", # correlation method
              hist.col = "#00AFBB"
-             )
-#Висновок: Найбільший взаємозв'язок (>0,7) мають змінні Life та AM, Life та TH59, Life та S, AM та S, HepB та Diphth, Polio та Diphth, TH59 та S. 
+            )
+f2 <- c(1,9,10,11,12,13,14,15,16)
+c_f2 <- f[f2]
+pairs.panels(c_f2, lm=TRUE, # linear fit
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB"
+            )
+#Висновок: Розбито змінні на дві групи (в кожну включено залежну змінну Life). Найбільший взаємозв'язок (модуль>0,7) мають змінні Life та HIV, Life та TH59, Life та S, ID та U5D, TH59 та S. 
 ```
 #Splitting the dataset into the TRAIN set and TEST set
 ```{r}
@@ -139,13 +193,15 @@ model_sr1 <- lm(Life~TH59, f_train)
 summary(model_sr1)
 model_sr2 <- lm(Life~S, f_train)
 summary(model_sr2)
-model_sr3 <- lm(Life~AM, f_train)
+model_sr3 <- lm(Life~HIV, f_train)
 summary(model_sr3)
 #Висновок: розглянуто три моделі. Обрана змінна найбільш значуща у першій моделі (ТН59), коефіцієнт детермінації 0,75. Тому далі працюємо саме з нею.
+```
+```{r}
 #Predicting
 p_sr <- predict(model_sr1, f_test)
 r2_sr <- 1-sum((f_train$Life - predict(model_sr1, f_train))^2)/sum((f_train$Life - mean(f_train$Life))^2)
-R2_sr <- cor(f_train$Life, fitted(model_sr1))^2 #simplier ex.
+R2_sr <- cor(f_train$Life, fitted(model_sr1))^2
 train_mse_sr <- sum((f_train$Life-predict(model_sr1, f_train))^2)/length(f_train$Life)
 test_mse_sr <- sum((f_test$Life-p_sr)^2)/length(p_sr)
 r2_sr
@@ -153,6 +209,8 @@ R2_sr
 train_mse_sr
 test_mse_sr
 #Висновок: Розраховані коефіцієнти детермінації. Значення середньоквадратичної похибки на навчальній вибірці – 15.44708, на тестовій вибірці – 27.50741, тобто є перенавчання.
+```
+```{r}
 #Visualising
 library(ggplot2)
 ggplot() +
@@ -166,23 +224,27 @@ ggplot() +
 ```
 #Multiple Linear Regression
 ```{r}
-f_train <- f_train[,-1]
-f_test <- f_test[,-1]
 #All factors
 model_mr <- lm(data = f_train, Life ~ .)
 summary(model_mr) 
-#Висновок: зміннi HepB, Measles, BMI, Polio, Diphth, P, TH119, S не значущі, виключимо їх з моделі (оскільки їх p-value, Pr(>|t|) вищі за 5%). Коефіцієнт детермінації помітно зріс, порівняно з лінійною регресією (0,88). 
+#Висновок: зміннi HepB, Measles, Polio, Diphth, P, S не значущі, виключимо їх з моделі (оскільки їх p-value, Pr(>|t|) вищі за 5%). Коефіцієнт детермінації помітно зріс, порівняно з лінійною регресією (0,87). 
+```
+```{r}
 #Optimized model
-model_opt <- lm(data = f_train, Life ~ AM + ID + U5D + TotalExpend + HIV + GDP + TH59)
+model_opt <- lm(data = f_train, Life ~ AM + ID + BMI + U5D + TotalExpend + HIV + GDP + TH119 + TH59)
 summary(model_opt) 
-#Висновок: побудовано семифакторну модель. Найбільш значущі змінні AM, HIV, TH59, TotalExpend,  коефіцієнт детермінації 0,87.
+#Висновок: побудовано дев'ятифакторну модель. Найбільш значущі змінні U5D, TotalExpend, HIV, TH59 коефіцієнт детермінації 0,87 (скорегований коефіцієнт детермінації трохи зріс з 0,847 (при включенні всіх факторів) до 0,856).
+```
+```{r}
 #Prediction
 p_mr <- predict(model_opt, f_test)
 train_mse_opt <- sum((f_train$Life-predict(model_opt, f_train))^2)/length(f_train$Life)
 test_mse_opt <- sum((f_test$Life-p_mr)^2)/length(p_mr)
 train_mse_opt
 test_mse_opt
-#Висновок: значення середньоквадратичних помилок покращились: на навчальній вибірці – 7.923881, на тестовій вибірці – 19.72617, тобто є перенавчання.
+#Висновок: значення середньоквадратичних помилок покращились: на навчальній вибірці – 8.196973, на тестовій вибірці – 18.3941, тобто є перенавчання.
+```
+```{r}
 #Visualising
 ggplot() +
   geom_point(aes(f_train$TH59, f_train$Life),colour = 'yellow') +
@@ -208,6 +270,8 @@ f_test_poly$TH593 <- f_test_poly$TH59^3
 model_pr <- lm(data = f_train_poly, Life ~ TH592 + TH593)
 summary(model_pr) 
 #Висновок: змінна TH59^2 значуща, а TH59^3 - не значуща, коефіцієнт детермінації зменшився – 0,75.
+```
+```{r}
 #Predicting
 p_pr <- predict(model_pr, f_test_poly)
 train_mse_poly <- sum((f_train_poly$Life-predict(model_pr, f_train_poly))^2)/length(f_train_poly$Life)
@@ -215,6 +279,8 @@ test_mse_poly <- sum((f_test_poly$Life-p_pr)^2)/length(p_pr)
 train_mse_poly
 test_mse_poly
 #Висновок: значення середньоквадратичних помилок зросли на навчальній вибірці – 15.13735, на тестовій вибірці – 27.86672, тобто є перенавчання.
+```
+```{r}
 #Visualising
 ggplot() +
   geom_point(aes(f_train_poly$TH59, f_train_poly$Life),colour = 'yellow') +
@@ -223,7 +289,7 @@ ggplot() +
   ggtitle('Life vs TH59') +
   xlab('TH59') +
   ylab('Life')
-#Висновок: ##Висновок: на графіку жовтим позначені точки навчальної вибірки, зеленим – точки тестової вибірки, а коричневим – модельні значення.
+#Висновок: на графіку жовтим позначені точки навчальної вибірки, зеленим – точки тестової вибірки, а коричневим – модельні значення.
 ```
 #Decision Tree Regression
 ```{r}
@@ -232,6 +298,8 @@ model_dt <- rpart(Life ~ TH59, f_train, control = rpart.control(minsplit = 10))
 plot(model_dt)
 text(model_dt)
 #Висновок: побудовано дерево рішень, екзогенна змінна – TH59.
+```
+```{r}
 #Predicting
 p_dt <- predict(model_dt, f_test)
 train_mse_dt <- sum((f_train$Life-predict(model_dt, f_train))^2)/length(f_train$Life)
@@ -239,6 +307,8 @@ test_mse_dt <- sum((f_test$Life-p_dt)^2)/length(p_dt)
 train_mse_dt
 test_mse_dt
 #Висновок: значення середньоквадратичної похибки на навчальній вибірці – 13.90709, на тестовій вибірці – 26.28905. Модель перенавчено.
+```
+```{r}
 #Visualising
 library(ggplot2)
 x_grid <- seq(min(f_train$TH59), max(f_train$TH59), 0.01)
@@ -257,17 +327,18 @@ library(randomForest)
 set.seed(1047)
 model_rf = randomForest(x = f_train['TH59'],
                          y = f_train$Life,
-                         ntree = 50)
-#Висновок: побудовано віпадковий ліс із 50 дерев, екзогенна змінна – TH59.
- 
+                         ntree = 26)
+#Висновок: побудовано віпадковий ліс із 26 дерев, екзогенна змінна – TH59.
+
 #Predicting
 p_rf <- predict(model_rf, f_test)
 train_mse_rf <- sum((f_train$Life-predict(model_rf, f_train))^2)/length(f_train$Life)
 test_mse_rf <- sum((f_test$Life-p_rf)^2)/length(p_rf)
 train_mse_rf
 test_mse_rf
-#Висновок: значення середньоквадратичної похибки на навчальній вибірці – 13.8867, на тестовій вибірці – 25.8839. Модель перенавчено.
- 
+#Висновок: значення середньоквадратичної похибки на навчальній вибірці – 13.90755, на тестовій вибірці – 25.59485. Модель перенавчено.
+```
+```{r} 
 #Visualising
 ggplot() +
   geom_point(aes(f_train$TH59, f_train$Life),colour = 'yellow') +
@@ -293,10 +364,14 @@ ff_ap <- nnet(Life ~ AM + ID + U5D + TotalExpend + HIV + GDP + TH59, f_train_sc,
 library(graphics)
 source(file = 'plot.nnet.R')
 plot.nnet(ff_ap)
+```
+```{r}
 # Prediction
 p_y_train <- predict(ff_ap, f_train_sc)
 p_y_test <- predict(ff_ap, f_test_sc)
 #Висновок: побудовано двошарову нейронну мережу для прогнозування Life. 
+```
+```{r}
 # Invert the effect of the scale function
 sc_y_train <- scale(f_train$Life)
 y_train <- DMwR::unscale(p_y_train, sc_y_train)
@@ -307,7 +382,9 @@ train_mse_nn <- sum((f_train$Life-y_train)^2)/length(f_train$Life)
 test_mse_nn <- sum((f_test$Life-y_test)^2)/length(f_test$Life)
 train_mse_nn
 test_mse_nn
-#Висновок: середньоквадратична помилка на навчальній вибірці – 2.18083, на тестовій вибірці – 16.72324. Модель перенавчено.
+#Висновок: середньоквадратична помилка на навчальній вибірці –1.244452, на тестовій вибірці – 38.51775. Модель перенавчено.
+```
+```{r}
 # Visualising
 library(ggplot2)
 ggplot() +
@@ -321,23 +398,23 @@ ggplot() +
 ```
 ```{r}
 #sr
-test_mse_sr
 train_mse_sr
+test_mse_sr
 #opt
-test_mse_opt
 train_mse_opt
+test_mse_opt
 #polynom
-test_mse_poly
 train_mse_poly
+test_mse_poly
 #dt
-test_mse_dt
 train_mse_dt
+test_mse_dt
 #rf
-test_mse_rf
 train_mse_rf
+test_mse_rf
 #nn
-test_mse_nn
 train_mse_nn
+test_mse_nn
 ```
 #Saving results
 ```{r}
@@ -373,9 +450,9 @@ gridExtra::grid.arrange(g_sr,g_mr,g_pr,g_dt,g_rf,ncol=2)
 
 #Висновки
 ```{r}
-#Отже,за даними без пропусків та викидів було побудовано моделі простої лінійної регресії, багатофакторної лінійної регресії з усіма змінними та семифакторну (за виключенням декількох незначущих змінних), поліноміальну модель, дерево рішень та випадковий ліс. Усі розглянуті моделі є перенавченими (зміна SplitRatio в межах 0,7-0,8 значно не змінила ситуації). 
-#Найменша середньоквадратична помилка на тренувальній вибірці була у нейронній мережі (2,18), а найбільша - при простій лінійній регресії (15,45).
-#Найменша середньоквадратична помилка на тестовій вибірці була у нейронній мережі (16,72), а найбільша - у поліноміальній моделі (27,87). 
+#Отже,за даними без пропусків та викидів (частину змінних, розподіл яких є не нормальним, прологарифмовано) було побудовано моделі простої лінійної регресії, багатофакторної лінійної регресії з усіма змінними та дев'ятифакторну (за виключенням декількох незначущих змінних), поліноміальну модель, дерево рішень та випадковий ліс. Усі розглянуті моделі є перенавченими (зміна SplitRatio в межах 0,7-0,8 значно не змінила ситуації). 
+#Найменша середньоквадратична помилка на тренувальній вибірці була у нейронній мережі (1,24), а найбільша - при простій лінійній регресії (15,45).
+#Найменша середньоквадратична помилка на тестовій вибірці була у дев'ятифакторній моделі (18,39), а найбільша - у нейронній мережі (38,52). 
 #Коефіцієнт детермінації був найбільшим у багатофакторній лінійній регресійній моделі зі всімома змінними (0,88).
-#Серед розглянутих варіантів найякіснішою є побудована нейронна мережа. Отримані нейронною мережею прогнозні значення є близькими до реальних.
+#Хоча в усіх моделях присутнє перенавчання, серед розглянутих варіантів найякіснішою є побудована проста лінійна регресія. Отримані прогнозні значення є досить близькими до реальних.
 ```
