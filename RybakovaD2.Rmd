@@ -1,0 +1,1069 @@
+---
+title: "Classification"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Download the data
+```{r}
+set.seed(123)
+f <- read.csv2('D.csv', header = TRUE, encoding = 'UNICOD')
+f <- f[,-1]
+head (f)
+library (dplyr)
+library (psych)
+d=describe(f)
+glimpse(f)
+#Висновок: 132 спостереження та 16 змінних.Факторних змінних серед них немає
+```
+#Fill n/a with average
+```{r}
+mLife <- mean(f$Life)
+f$Life <- ifelse(f$Life> mLife, 1, 0)
+#Змінна Life перетворена в бінарну
+f_fill <- f
+f_fill$ID <- ifelse(is.na(f$ID),round(mean(f$ID,na.rm = TRUE)),f$ID)
+f_fill$Measles <- ifelse(is.na(f$Measles),round(mean(f$Measles,na.rm = TRUE)),f$Measles)
+f_fill$U5D <- ifelse(is.na(f$U5D),round(mean(f$U5D,na.rm = TRUE)),f$U5D)
+f <- f_fill
+h=describe(f_fill)
+#Висновок: пропуски заповнені середніми значеннями змінних.
+```
+#Log
+```{r}
+f_log <- f
+f_log$AM <- log(f$AM, )
+f_log$ID <- log(f$ID, )
+f_log$HepB <- log(f$HepB, )
+f_log$Measles <- log(f$Measles, )
+f_log$BMI <- log(f$BMI, )
+f_log$U5D <- log(f$U5D, )
+f_log$Polio <- log(f$Polio, )
+f_log$Diphth<- log(f$Diphth, )
+f_log$HIV <- log(f$HIV, )
+f_log$GDP <- log(f$GDP, )
+f_log$P <- log(f$P, )
+f_log$TH119 <- log(f$TH119, )
+f<- f_log 
+```
+```{r}
+#Box-plot
+par(mfrow = c(2, 4))
+boxplot(f$Life,  main = 'Life')
+boxplot(f$AM, main = 'AM')
+boxplot(f$ID, main = 'ID')
+boxplot(f$HepB, main = 'HepB')
+boxplot(f$Measles, main = 'Measles')
+boxplot(f$BMI,  main = 'BMI')
+boxplot(f$U5D, main = 'U5D')
+boxplot(f$Polio, main = 'Polio')
+boxplot(f$TotalExpend, main = 'TotalExpend')
+boxplot(f$Diphth, main = 'Diphth')
+boxplot(f$HIV,  main = 'HIV')
+boxplot(f$GDP, main = 'GDP')
+boxplot(f$P, main = 'P')
+boxplot(f$TH119, main = 'TH119')
+boxplot(f$TH59, main = 'TH59')
+boxplot(f$S, main = 'S')
+#Висновок: змінні AM, HepB, BMI, Polio, TotalExpend, Diphth, HIV, P, TH119 мають викиди. Змінні ID, Measles, U5D та GDP після логарифмування звільнилися від викидів.
+```
+#Replace ejections (outside the three sigma) with boundary values.
+```{r}
+f_ej <- f
+f_ej$AM <- ifelse(f$AM < mean(f$AM) + sd(f$AM)*3, f$AM,mean(f$AM) + sd(f$AM)*3)
+f_ej$HepB <- ifelse(f$HepB < mean(f$HepB) + sd(f$HepB)*3, f$HepB,mean(f$HepB) + sd(f$HepB)*3)
+f_ej$BMI <- ifelse(f$BMI < mean(f$BMI) + sd(f$BMI)*3, f$BMI,mean(f$BMI) + sd(f$BMI)*3)
+f_ej$Polio <- ifelse(f$Polio < mean(f$Polio) + sd(f$Polio)*3, f$Polio,mean(f$Polio) + sd(f$Polio)*3)
+f_ej$TotalExpend <- ifelse(f$TotalExpend < mean(f$TotalExpend) + sd(f$TotalExpend)*3, f$TotalExpend,mean(f$TotalExpend) + sd(f$TotalExpend)*3)
+f_ej$Diphth <- ifelse(f$Diphth < mean(f$Diphth) + sd(f$Diphth)*3, f$Diphth,mean(f$Diphth) + sd(f$Diphth)*3)
+f_ej$HIV <- ifelse(f$HIV < mean(f$HIV) + sd(f$HIV)*3, f$HIV,mean(f$HIV) + sd(f$HIV)*3)
+f_ej$P <- ifelse(f$P < mean(f$P) + sd(f$P)*3, f$P,mean(f$P) + sd(f$P)*3)
+f_ej$TH119 <- ifelse(f$TH119 < mean(f$TH119) + sd(f$TH119)*3, f$TH119,mean(f$TH119) + sd(f$TH119)*3)
+f <- f_ej
+#Висновок: для корекції викидів здійснене заповнення граничними значеннями.
+```
+# Splitting the scaled dataset into the TRAIN set and TEST set
+```{r}
+set.seed(123)
+library(caTools)
+split = sample.split(f$Life, SplitRatio = 2/3)
+f_train_ws = subset(f, split == TRUE)
+f_test_ws = subset(f, split == FALSE)
+#Висновок: датасет розподілений на навчальну та тестову вибірки (88 та 44 спостереження)
+```
+# Features Scaling
+```{r}
+f_sc=f
+f_train<-f_train_ws
+f_test<-f_test_ws
+
+mAM <- mean(f_train$AM)
+sAM <- sd(f_train$AM)
+f_train$AM <- (f_train$AM-mAM)/sAM
+f_test$AM <- (f_test$AM-mAM)/sAM
+f_sc$AM <- (f$AM-mAM)/sAM
+
+mID <- mean(f_train$ID)
+sID <- sd(f_train$ID)
+f_train$ID <- (f_train$ID-mID)/sID
+f_test$ID <- (f_test$ID-mID)/sID
+f_sc$ID <- (f$ID-mID)/sID
+
+mHepB <- mean(f_train$HepB)
+sHepB <- sd(f_train$HepB)
+f_train$HepB <- (f_train$HepB-mHepB)/sHepB
+f_test$HepB <- (f_test$HepB-mHepB)/sHepB
+f_sc$HepB <- (f$HepB-mHepB)/sHepB
+
+mMeasles <- mean(f_train$Measles)
+sMeasles <- sd(f_train$Measles)
+f_train$Measles <- (f_train$Measles-mMeasles)/sMeasles
+f_test$Measles <- (f_test$Measles-mMeasles)/sMeasles
+f_sc$Measles <- (f$Measles-mMeasles)/sMeasles
+
+mBMI <- mean(f_train$BMI)
+sBMI <- sd(f_train$BMI)
+f_train$BMI <- (f_train$BMI-mBMI)/sBMI
+f_test$BMI <- (f_test$BMI-mBMI)/sBMI
+f_sc$BMI <- (f$BMI-mBMI)/sBMI
+
+mU5D <- mean(f_train$U5D)
+sU5D <- sd(f_train$U5D)
+f_train$U5D <- (f_train$U5D-mU5D)/sU5D
+f_test$U5D <- (f_test$U5D-mU5D)/sU5D
+f_sc$U5D <- (f$U5D-mU5D)/sU5D
+
+mPolio <- mean(f_train$Polio)
+sPolio <- sd(f_train$Polio)
+f_train$Polio <- (f_train$Polio-mPolio)/sPolio
+f_test$Polio <- (f_test$Polio-mPolio)/sPolio
+f_sc$Polio <- (f$Polio-mPolio)/sPolio
+
+mTotalExpend <- mean(f_train$TotalExpend)
+sTotalExpend <- sd(f_train$TotalExpend)
+f_train$TotalExpend <- (f_train$TotalExpend-mTotalExpend)/sTotalExpend
+f_test$TotalExpend <- (f_test$TotalExpend-mTotalExpend)/sTotalExpend
+f_sc$TotalExpend <- (f$TotalExpend-mTotalExpend)/sTotalExpend
+
+mDiphth <- mean(f_train$Diphth)
+sDiphth <- sd(f_train$Diphth)
+f_train$Diphth <- (f_train$Diphth-mDiphth)/sDiphth
+f_test$Diphth <- (f_test$Diphth-mDiphth)/sDiphth
+f_sc$Diphth <- (f$Diphth-mDiphth)/sDiphth
+
+mHIV <- mean(f_train$HIV)
+sHIV <- sd(f_train$HIV)
+f_train$HIV <- (f_train$HIV-mHIV)/sHIV
+f_test$HIV <- (f_test$HIV-mHIV)/sHIV
+f_sc$HIV <- (f$HIV-mHIV)/sHIV
+
+mGDP <- mean(f_train$GDP)
+sGDP <- sd(f_train$GDP)
+f_train$GDP <- (f_train$GDP-mGDP)/sGDP
+f_test$GDP <- (f_test$GDP-mGDP)/sGDP
+f_sc$GDP <- (f$GDP-mGDP)/sGDP
+
+mP <- mean(f_train$P)
+sP <- sd(f_train$P)
+f_train$P <- (f_train$P-mP)/sP
+f_test$P <- (f_test$P-mP)/sP
+f_sc$P <- (f$P-mP)/sP
+
+mTH119 <- mean(f_train$TH119)
+sTH119 <- sd(f_train$TH119)
+f_train$TH119 <- (f_train$TH119-mTH119)/sTH119
+f_test$TH119 <- (f_test$TH119-mTH119)/sTH119
+f_sc$TH119 <- (f$TH119-mTH119)/sTH119
+
+mTH59 <- mean(f_train$TH59)
+sTH59 <- sd(f_train$TH59)
+f_train$TH59 <- (f_train$TH59-mTH59)/sTH59
+f_test$TH59 <- (f_test$TH59-mTH59)/sTH59
+f_sc$TH59 <- (f$TH59-mTH59)/sTH59
+
+mS <- mean(f_train$S)
+sS <- sd(f_train$S)
+f_train$S <- (f_train$S-mS)/sS
+f_test$S <- (f_test$S-mS)/sS
+f_sc$S <- (f$S-mS)/sS
+#Висновки: виконане шкалювання кількісних змінних
+```
+# Fitting (Benchmark model)
+```{r}
+class_lr <- glm(Life ~ ., f_train, family = binomial)
+summary(class_lr)
+#Висновки: змінні TotalExpend та HIV значущі. Змінна TH59 менш значуща.
+```
+#Optimized model
+```{r}
+#Для оптимізованої моделі обрано змінні TotalExpend i HIV, оскільки вони найбільш значущі.
+class_opt <- glm(Life ~ TotalExpend + HIV, f_train, family = binomial)
+summary(class_opt)
+#Висновки: усі змінні значущі
+```
+# Predicting
+```{r}
+p <- predict(class_opt, f_test[, c('TotalExpend','HIV')], type = 'response')
+y <- ifelse(p > 0.5, 1, 0)
+#Висновки: розраховано ймовірностівіднесення об'єктів до кожного з 2 класів (ректор р), визначені класи об'єктів (вектор у)
+```
+# Confusion Matrix
+```{r}
+cm = table(f_test[, 'Life'], y > 0.7)
+print(cm)
+t11=cm[1]
+t21=cm[2]
+t12=cm[3]
+t22=cm[4]
+sum=t11+t12+t21+t22
+tochn_opt=(t11+t22)/sum
+nevcl_opt=(t12+t21)/sum
+chutl_opt=t22/(t21+t22)
+spec_opt=t11/(t11+t12)
+tochn_opt*100
+nevcl_opt*100
+chutl_opt*100
+spec_opt*100
+#Точність моделі = (24+16)/44=90,9%
+#Частка невірно класифікованих = (4+0)/44=9,1%
+#Чутливість моделі = 24/(0+24)=100%
+#специфічність моделі = 16/(4+16)=80%
+#Отже, модель більш чутлива до виявлення позитивних випадків
+```
+# ROCR
+```{r}
+library(ROCR)
+pref <- prediction(p, f_test$Life)
+perf <- performance(pref, "tpr", "fpr")
+plot(perf)
+#Висновок: Співвідношення істинно-позитивних та хибно негативних випадків свідчить про відносно хорошу якість моделі.
+```
+# Visualising the Test set results
+```{r}
+library(ggplot2)
+set = f_test[,c('TotalExpend','HIV','Life')]
+X1 = seq(min(set['TotalExpend']) - 1, max(set['TotalExpend']) + 1, by = 0.01)
+X2 = seq(min(set['HIV']) - 1, max(set['HIV']) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('TotalExpend', 'HIV')
+prob_set = predict(class_opt, grid_set, type = 'response')
+y_grid = ifelse(prob_set > 0.7, 1, 0)
+plot(set[, -3],
+     main = 'Logistic Regression',
+     xlab = 'TotalExpend', ylab = 'HIV',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'tomato', 'springgreen3'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'red3', 'green4'))
+#Червоним позначені країни, тривалість життя в яких нижче за середню, зеленим позначені країни, тривалість життя в яких вище за середню. Червона зона - скоріш за все країни, тривалість життя в яких нижче за середню. У моделі лінійний варіант розподільної кривої
+```
+##K-Nearest Neighbors (K-NN)
+# Fitting & predicting
+```{r}
+library(class)
+y = knn(train = f_train[,c('TotalExpend','HIV')],
+        test = f_test[,c('TotalExpend','HIV')],
+        cl = f_train[, 'Life'],
+        k = 5,
+        prob = TRUE)
+```
+# Confusion Matrix
+```{r}
+cm = table(f_test[, 'Life'], y == '1')
+print(cm)
+t11=cm[1]
+t21=cm[2]
+t12=cm[3]
+t22=cm[4]
+sum=t11+t12+t21+t22
+tochn_knn=(t11+t22)/sum
+nevcl_knn=(t12+t21)/sum
+chutl_knn=t22/(t21+t22)
+spec_knn=t11/(t11+t12)
+tochn_knn*100
+nevcl_knn*100
+chutl_knn*100
+spec_knn*100
+#Точність моделі = (23+14)/44=84,1%
+#Частка невірно класифікованих = (1+6)/44=15,9%
+#Чутливість моделі = 23/(1+23)=95,8%
+#специфічність моделі = 14/(6+14)=70%
+#Отже, модель більш чутлива до виявлення позитивних випадків
+```
+# Visualising the Test set results
+```{r}
+library(ggplot2)
+set = f_test[,c('TotalExpend','HIV','Life')]
+X1 = seq(min(set['TotalExpend']) - 1, max(set['TotalExpend']) + 1, by = 0.01)
+X2 = seq(min(set['HIV']) - 1, max(set['HIV']) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('TotalExpend', 'HIV')
+y_grid = knn(train = f_train[,c('TotalExpend','HIV')], test = grid_set, cl = f_train[, 'Life'], k = 5)
+plot(set[, -3],
+     main = 'KNN',
+     xlab = 'TotalExpend', ylab = 'HIV',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'tomato', 'springgreen3'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'red3', 'green4'))
+#Червоним позначені країни, тривалість життя в яких нижче за середню, зеленим позначені країни, тривалість життя в яких вище за середню. Червона зона - скоріш за все країни, тривалість життя в яких нижче за середню. У моделі нелінійний варіант розподільної кривої
+```
+##Support Vector Machine (SVM)
+# Fitting SVM model
+```{r}
+f_train2f<-f_train[,c('TotalExpend','HIV','Life')]
+f_test2f<-f_test[,c('TotalExpend','HIV','Life')]
+library(e1071)
+class_svm_l = svm(Life ~ TotalExpend + HIV, data = f_train2f, kernel = 'linear')
+summary(class_svm_l)
+#Для навчання базової моделі, заснованої на методі опорних векторів, обрано лінійне ядро
+```
+# Predicting
+```{r}
+p <- predict(class_svm_l, f_test2f[, c('TotalExpend','HIV')])
+y <- ifelse(p > 0.5, 1, 0)
+#Визначено класи об'єктів (вектор у)
+```
+# Confusion Matrix
+```{r}
+cm = table(f_test2f[, 'Life'], y)
+print(cm)
+t11=cm[1]
+t21=cm[2]
+t12=cm[3]
+t22=cm[4]
+sum=t11+t12+t21+t22
+tochn_svm=(t11+t22)/sum
+nevcl_svm=(t12+t21)/sum
+chutl_svm=t22/(t21+t22)
+spec_svm=t11/(t11+t12)
+tochn_svm*100
+nevcl_svm*100
+chutl_svm*100
+spec_svm*100
+#Точність моделі = (24+11)/44=79,5%
+#Частка невірно класифікованих = (9+0)/44=20,5%
+#Чутливість моделі = 24/(0+24)=100%
+#специфічність моделі = 11/(9+11)=55%
+#Отже, модель більш чутлива до виявлення позитивних випадків
+```
+# Visualising the Test set results
+```{r}
+xgrid = expand.grid(TotalExpend = f_test2f$TotalExpend, HIV = f_test2f$HIV)
+ygrid = predict(class_svm_l, xgrid)
+#Finally, you plot the points and color them according to the decision boundary. You can see that the decision boundary is linear. You can put the data points in the plot as well to see where they lie.
+plot(xgrid, col = as.numeric(ygrid), pch = 10, cex = .9)
+points(f_test2f[, c('TotalExpend','HIV')], col = as.factor(f_test2f$Life), pch = 19)
+#Червоним позначені країни, тривалість життя в яких нижче за середню, чорним позначені країни, тривалість життя в яких вище за середню. У моделі лінійний варіант розподільної кривої
+```
+# Fitting RBF-kernel model
+```{r}
+library(e1071)
+class_svm_r = svm(Life ~ TotalExpend + HIV, data = f_train2f, kernel = 'radial')
+summary(class_svm_r)
+```
+# Predicting
+```{r}
+p <- predict(class_svm_r, f_test2f[, c('TotalExpend','HIV')])
+y <- ifelse(p > 0.5, 1, 0)
+```
+## Confusion Matrix
+```{r}
+cm = table(f_test2f[, 'Life'], y)
+print(cm)
+t11=cm[1]
+t21=cm[2]
+t12=cm[3]
+t22=cm[4]
+sum=t11+t12+t21+t22
+tochn_svm_r=(t11+t22)/sum
+nevcl_svm_r=(t12+t21)/sum
+chutl_svm_r=t22/(t21+t22)
+spec_svm_r=t11/(t11+t12)
+tochn_svm_r*100
+nevcl_svm_r*100
+chutl_svm_r*100
+spec_svm_r*100
+#Точність моделі = (23+15)/44=86,4%
+#Частка невірно класифікованих = (5+1)/44=13,6%
+#Чутливість моделі = 23/(1+23)=95,8%
+#специфічність моделі = 15/(5+15)=75%
+#Отже, модель більш чутлива до виявлення позитивних випадків
+```
+# Visualising the Test set results
+```{r}
+library(ggplot2)
+set = f_test[,c('TotalExpend','HIV','Life')]
+X1 = seq(min(set['TotalExpend']) - 1, max(set['TotalExpend']) + 1, by = 0.01)
+X2 = seq(min(set['HIV']) - 1, max(set['HIV']) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('TotalExpend', 'HIV')
+p_grid = predict(class_svm_r, grid_set)
+y_grid <- ifelse(p_grid > 0.5, 1, 0)
+plot(set[, -3],
+     main = 'SVM',
+     xlab = 'TotalExpend', ylab = 'HIV',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'tomato', 'springgreen3'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'red3', 'green4'))
+#Червоним позначені країни, тривалість життя в яких нижче за середню, зеленим позначені країни, тривалість життя в яких вище за середню. Червона зона - скоріш за все країни, тривалість життя в яких нижче за середню. У моделі нелінійний варіант розподільної кривої
+```
+##Naive Bayes
+# Fitting 
+```{r}
+library(e1071)
+f_train$Life <- as.factor(f_train$Life)
+f_test$Life <- as.factor(f_test$Life)
+class_nb = naiveBayes(Life ~ TotalExpend + HIV, data = f_train)
+```
+# Predicting
+```{r}
+y <- predict(class_nb, f_test[, c('TotalExpend','HIV')])
+```
+# Confusion Matrix
+```{r}
+cm = table(f_test[, 'Life'], y)
+print(cm)
+t11=cm[1]
+t21=cm[2]
+t12=cm[3]
+t22=cm[4]
+sum=t11+t12+t21+t22
+tochn_nb=(t11+t22)/sum
+nevcl_nb=(t12+t21)/sum
+chutl_nb=t22/(t21+t22)
+spec_nb=t11/(t11+t12)
+tochn_nb*100
+nevcl_nb*100
+chutl_nb*100
+spec_nb*100
+#Точність моделі = (24+15)/44=88,6%
+#Частка невірно класифікованих = (5+0)/44=11,4%
+#Чутливість моделі = 24/(0+24)=100%
+#специфічність моделі = 15/(5+15)=75%
+#Отже, модель більш чутлива до виявлення позитивних випадків
+```
+# Visualising the Test set results
+```{r}
+library(ggplot2)
+set = f_test[,c('TotalExpend','HIV','Life')]
+X1 = seq(min(set['TotalExpend']) - 1, max(set['TotalExpend']) + 1, by = 0.01)
+X2 = seq(min(set['HIV']) - 1, max(set['HIV']) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('TotalExpend', 'HIV')
+y_grid = predict(class_nb, grid_set)
+plot(set[, -3],
+     main = 'Naive Bayes',
+     xlab = 'TotalExpend', ylab = 'HIV',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'tomato', 'springgreen3'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'red3', 'green4'))
+#Червоним позначені країни, тривалість життя в яких нижче за середню, зеленим позначені країни, тривалість життя в яких вище за середню. Червона зона - скоріш за все країни, тривалість життя в яких нижче за середню. У моделі нелінійний варіант розподільної кривої. Гарно видно, що модель дуже близька до реальності.
+```
+##Classification Tree with scaling
+# Fitting 
+```{r}
+library(rpart)
+f_train$Life <- as.factor(f_train$Life)
+f_test$Life <- as.factor(f_test$Life)
+class_dt_sc = rpart(Life ~ ., data = f_train)
+```
+# Predicting
+```{r}
+y <- predict(class_dt_sc, f_test[-1], type = 'class')
+```
+# Confusion Matrix
+```{r}
+cm = table(f_test[, 'Life'], y)
+print(cm)
+t11=cm[1]
+t21=cm[2]
+t12=cm[3]
+t22=cm[4]
+sum=t11+t12+t21+t22
+tochn_dt_sc=(t11+t22)/sum
+nevcl_dt_sc=(t12+t21)/sum
+chutl_dt_sc=t22/(t21+t22)
+spec_dt_sc=t11/(t11+t12)
+tochn_dt_sc*100
+nevcl_dt_sc*100
+chutl_dt_sc*100
+spec_dt_sc*100
+#Точність моделі = (23+18)/44=93,2%
+#Частка невірно класифікованих = (1+2)/44=6,8%
+#Чутливість моделі = 23/(1+23)=95,8%
+#специфічність моделі = 18/(2+18)=90%
+#Отже, модель більш чутлива до виявлення позитивних випадків
+```
+# Plotting the tree
+```{r}
+library(rpart.plot)
+plot(class_dt_sc)
+text(class_dt_sc)
+#Візуалізація дозволяє проаналізувати логіку побудови дерева.На шкальованих даних інтерпритація результату є досить умовною, але країни, S яких не більше за -0,56, у яких ВМІ не більше 0,51 скоріш за все мають тривалість життя населення нижче, за середню.
+```
+# Fitting 2 factors
+```{r}
+class_ct_sc = rpart(Life ~ TotalExpend + HIV, data = f_train)
+```
+# Predicting
+```{r}
+y <- predict(class_ct_sc, f_test[, c('TotalExpend','HIV')], type = 'class')
+```
+# Confusion Matrix
+```{r}
+cm = table(f_test[, 'Life'], y)
+print(cm)
+t11=cm[1]
+t21=cm[2]
+t12=cm[3]
+t22=cm[4]
+sum=t11+t12+t21+t22
+tochn_ct_sc=(t11+t22)/sum
+nevcl_ct_sc=(t12+t21)/sum
+chutl_ct_sc=t22/(t21+t22)
+spec_ct_sc=t11/(t11+t12)
+tochn_ct_sc*100
+nevcl_ct_sc*100
+chutl_ct_sc*100
+spec_ct_sc*100
+#Точність моделі = (23+14)/44=84,1%
+#Частка невірно класифікованих = (1+6)/44=15,9%
+#Чутливість моделі = 23/(1+23)=95,8%
+#специфічність моделі = 14/(14+6)=70%
+#Отже, модель більш чутлива до виявлення позитивних випадків
+```
+# Visualising the Test set results
+```{r}
+library(ggplot2)
+set = f_test[,c('TotalExpend','HIV','Life')]
+X1 = seq(min(set['TotalExpend']) - 1, max(set['TotalExpend']) + 1, by = 0.01)
+X2 = seq(min(set['HIV']) - 1, max(set['HIV']) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('TotalExpend', 'HIV')
+y_grid = predict(class_ct_sc, grid_set, type = 'class')
+plot(set[, -3],
+     main = 'Classification Tree',
+     xlab = 'TotalExpend', ylab = 'HIV',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'tomato', 'springgreen3'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'red3', 'green4'))
+#Червоним позначені країни, тривалість життя в яких нижче за середню, зеленим позначені країни, тривалість життя в яких вище за середню. Червона зона - скоріш за все країни, тривалість життя в яких нижче за середню. У моделі лінійний варіант розподільної кривої
+```
+## Fitting Random Forest Classification to the Training set with scaling
+```{r}
+library(randomForest)
+set.seed(123)
+class_rf_sc = randomForest(Life ~ TotalExpend + HIV, data = f_train, ntree = 5)
+```
+# Predicting
+```{r}
+y <- predict(class_rf_sc, f_test[, c('TotalExpend','HIV')])
+```
+# Confusion Matrix
+```{r}
+cm = table(f_test[, 'Life'], y)
+print(cm)
+t11=cm[1]
+t21=cm[2]
+t12=cm[3]
+t22=cm[4]
+sum=t11+t12+t21+t22
+tochn_rf_sc=(t11+t22)/sum
+nevcl_rf_sc=(t12+t21)/sum
+chutl_rf_sc=t22/(t21+t22)
+spec_rf_sc=t11/(t11+t12)
+tochn_rf_sc*100
+nevcl_rf_sc*100
+chutl_rf_sc*100
+spec_rf_sc*100
+#Точність моделі = (21+14)/44=79,5%
+#Частка невірно класифікованих = (3+6)/44=20,5%
+#Чутливість моделі = 21/(3+21)=87,5%
+#специфічність моделі = 14/(6+14)=70%
+#Отже, модель більш чутлива до виявлення позитивних випадків
+```
+# Visualising the Test set results
+```{r}
+set = f_test[,c('TotalExpend','HIV','Life')]
+X1 = seq(min(set['TotalExpend']) - 1, max(set['TotalExpend']) + 1, by = 0.01)
+X2 = seq(min(set['HIV']) - 1, max(set['HIV']) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('TotalExpend', 'HIV')
+y_grid = predict(class_rf_sc, grid_set)
+plot(set[, -3],
+     main = 'Random Forest',
+     xlab = 'TotalExpend', ylab = 'HIV',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'tomato', 'springgreen3'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'red3', 'green4'))
+#Червоним позначені країни, тривалість життя в яких нижче за середню, зеленим позначені країни, тривалість життя в яких вище за середню. Червона зона - скоріш за все країни, тривалість життя в яких нижче за середню. У моделі нелінійний варіант розподільної кривої
+```
+
+##Classification Tree without scaling
+```{r}
+set.seed(123)
+library(caTools)
+split = sample.split(f_fill$Life, SplitRatio = 2/3)
+f_train_ws_wl = subset(f_fill, split == TRUE)
+f_test_ws_wl = subset(f_fill, split == FALSE)
+f_test <- f_test_ws_wl
+f_train <- f_train_ws_wl
+```
+# Fitting 
+```{r}
+library(rpart)
+f_train$Life<- as.factor(f_train$Life)
+f_test$Life <- as.factor(f_test$Life)
+class_dt = rpart(Life ~ ., data = f_train)
+```
+# Predicting
+```{r}
+y <- predict(class_dt, f_test[-1], type = 'class')
+```
+# Confusion Matrix
+```{r}
+cm = table(f_test[, 'Life'], y)
+print(cm)
+t11=cm[1]
+t21=cm[2]
+t12=cm[3]
+t22=cm[4]
+sum=t11+t12+t21+t22
+tochn_dt=(t11+t22)/sum
+nevcl_dt=(t12+t21)/sum
+chutl_dt=t22/(t21+t22)
+spec_dt=t11/(t11+t12)
+tochn_dt*100
+nevcl_dt*100
+chutl_dt*100
+spec_dt*100
+#Точність моделі = (23+18)/44=93,2%
+#Частка невірно класифікованих = (1+2)/44=6,8%
+#Чутливість моделі = 23/(1+23)=95,8%
+#специфічність моделі = 18/(2+18)=90%
+#Отже, модель більш чутлива до виявлення позитивних випадків
+```
+# Plotting the tree
+```{r}
+library(rpart.plot)
+plot(class_dt)
+text(class_dt)
+#Візуалізація дозволяє проаналізувати логіку побудови дерева.Країни, S яких не більше за 12,65, у яких ВМІ не більше 47,8 скоріш за все мають тривалість життя населення нижче, за середню.
+```
+# Fitting 2 factors
+```{r}
+class_ct = rpart(Life ~ TotalExpend + HIV, data = f_train)
+```
+# Predicting
+```{r}
+y <- predict(class_ct, f_test[, c('TotalExpend','HIV')], type = 'class')
+```
+# Confusion Matrix
+```{r}
+cm = table(f_test[, 'Life'], y)
+print(cm)
+t11=cm[1]
+t21=cm[2]
+t12=cm[3]
+t22=cm[4]
+sum=t11+t12+t21+t22
+tochn_ct=(t11+t22)/sum
+nevcl_ct=(t12+t21)/sum
+chutl_ct=t22/(t21+t22)
+spec_ct=t11/(t11+t12)
+tochn_ct*100
+nevcl_ct*100
+chutl_ct*100
+spec_ct*100
+#Точність моделі = (23+14)/44=84,1%
+#Частка невірно класифікованих = (1+6)/44=15,9%
+#Чутливість моделі = 23/(1+23)=95,8%
+#специфічність моделі = 14/(6+14)=70%
+#Отже, модель більш чутлива до виявлення позитивних випадків
+```
+# Visualising the Test set results #Вилітає RStudio!
+library(ggplot2)
+set = f_test[,c('AST','ALB','Category')]
+X1 = seq(min(set['AST']) - 1, max(set['AST']) + 1, by = 0.01)
+X2 = seq(min(set['ALB']) - 1, max(set['ALB']) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('AST', 'ALB')
+y_grid = predict(class_ct, grid_set, type = 'class')
+plot(set[, -3],
+     main = 'Classification Tree',
+     xlab = 'AST', ylab = 'ALB',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'tomato', 'springgreen3'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'red3', 'green4'))
+
+## Fitting Random Forest Classification to the Training set without scaling
+```{r}
+library(randomForest)
+set.seed(123)
+class_rf = randomForest(Life ~ TotalExpend + HIV, data = f_train, ntree = 5)
+```
+# Predicting
+```{r}
+y <- predict(class_rf, f_test[, c('TotalExpend','HIV')])
+```
+# Confusion Matrix
+```{r}
+cm = table(f_test[, 'Life'], y)
+print(cm)
+t11=cm[1]
+t21=cm[2]
+t12=cm[3]
+t22=cm[4]
+sum=t11+t12+t21+t22
+tochn_rf=(t11+t22)/sum
+nevcl_rf=(t12+t21)/sum
+chutl_rf=t22/(t21+t22)
+spec_rf=t11/(t11+t12)
+tochn_rf*100
+nevcl_rf*100
+chutl_rf*100
+spec_rf*100
+#Точність моделі = (23+14)/44=84,1%
+#Частка невірно класифікованих = (1+6)/44=15,9%
+#Чутливість моделі = 23/(1+23)=95,8%
+#специфічність моделі = 14/(6+14)=70%
+#Отже, модель більш чутлива до виявлення позитивних випадків
+```
+# Visualising the Test set results #Вилітає RStudio!
+
+set = f_test[,c('AST','ALB','Category')]
+X1 = seq(min(set['AST']) - 1, max(set['AST']) + 1, by = 0.01)
+X2 = seq(min(set['ALB']) - 1, max(set['ALB']) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('AST', 'ALB')
+y_grid = predict(class_rf, grid_set)
+plot(set[, -3],
+     main = 'Random Forest',
+     xlab = 'AST', ylab = 'ALB',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'tomato', 'springgreen3'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'red3', 'green4'))
+
+##NEUORAL NETWORKS FOR CLASSIFICATION
+```{r  results='hide'}
+library(neuralnet)
+# fit neural network
+nn = neuralnet(Life ~ TotalExpend + HIV, f_train_ws, hidden = , linear.output = T)
+# plot neural network
+plot(nn)
+#Побудовано двошарову нейронну мережу
+```
+# Fitting the NN
+```{r results='hide'}
+library(nnet)
+library(scales)
+set.seed(11)
+ff_cl <- nnet(data = f_train_ws, Life ~ TotalExpend + HIV, size = 2, maxit = 1000)
+library(graphics)
+source(file = 'plot.nnet.R')
+plot.nnet(ff_cl)
+#Візуалізовано двошарову нейронну мережу
+```
+# Compare models
+```{r}
+#Точності моделей:
+tochn_opt
+tochn_knn
+tochn_svm
+tochn_svm_r
+tochn_nb
+tochn_dt_sc
+tochn_ct_sc
+tochn_rf_sc
+tochn_dt
+tochn_ct
+tochn_rf
+#Частки невірно класифікованих у моделях:
+nevcl_opt
+nevcl_knn
+nevcl_svm
+nevcl_svm_r
+nevcl_nb
+nevcl_dt_sc
+nevcl_ct_sc
+nevcl_rf_sc
+nevcl_dt
+nevcl_ct
+nevcl_rf
+#Чутливості моделей:
+chutl_opt
+chutl_knn
+chutl_svm
+chutl_svm_r
+chutl_nb
+chutl_dt_sc
+chutl_ct_sc
+chutl_rf_sc
+chutl_dt
+chutl_ct
+chutl_rf
+#Специфічності моделей:
+spec_opt
+spec_knn
+spec_svm
+spec_svm_r
+spec_nb
+spec_dt_sc
+spec_ct_sc
+spec_rf_sc
+spec_dt
+spec_ct
+spec_rf
+```
+
+##Hierarchical clustering
+```{r}
+model_hc <- hclust(dist(f), method = "ward.D" )
+plot(model_hc, main = paste('Dendrogram'))
+#Побудовано дендрограму на основі навчальної  вибірки з використанням методу ward.D
+```
+# Fitting HC to the dataset
+```{r}
+y_hc <- cutree(model_hc, k = 2)
+#cluster cores
+aggregate(f,by=list(y_hc),FUN=mean)
+#Cluster stat
+f$hc <- y_hc
+table(f$hc)
+#На основі аналізу дендрограми виділено 2 кластера
+```
+# Plotting the dendrogram
+```{r}
+plot(model_hc, cex = 0.7, labels = FALSE)
+rect.hclust(model_hc, k = 2, border = 2:5)
+#візуалізовано поділ на кластери на дендрограмі
+```
+# Visualising the clusters
+```{r}
+library(cluster)
+clusplot(f[,c('TotalExpend','HIV')],
+         y_hc,
+         lines = 0,
+         shade = TRUE,
+         color = TRUE,
+         labels= 0,
+         plotchar = FALSE,
+         span = TRUE,
+         main = paste('Clusters of customers'),
+         xlab = 'TotalExpend',
+         ylab = 'HIV')
+#візуалізовано кластери на датасеті. Є накладання областей, тому є об'єкти, що знаходяться на межі.
+```
+##K-Means
+# Historgram for each attribute
+```{r}
+library(tidyr)
+library(ggplot2)
+f %>% 
+  gather(Attributes, value, 1:16) %>% 
+  ggplot(aes(x=value)) +
+  geom_histogram(fill = "lightblue2", color = "black") + 
+  facet_wrap(~Attributes, scales = "free_x") +
+  labs(x = "Value", y = "Frequency")
+```
+# Correlation
+```{r}
+library(corrplot)
+corrplot(cor(f), type = "upper", method = "ellipse", tl.cex = 0.9)
+```
+# NbCLust
+```{r}
+library(factoextra)
+library(NbClust)
+res.nbclust <- NbClust(f, distance = "euclidean",
+                  min.nc = 2, max.nc = 10, 
+                  method = "complete", index ="all")
+fviz_nbclust(res.nbclust) + theme_minimal() + ggtitle("NbClust's optimal number of clusters")
+# Elbow method
+# The sum of squares at each number of clusters is calculated and graphed, and the user looks for a change of slope from steep to shallow (an elbow) to determine the optimal number of clusters.
+fviz_nbclust(f, kmeans, method = "wss") +
+    geom_vline(xintercept = 2, linetype = 2)+
+  labs(subtitle = "Elbow method")
+# Silhouette method
+# The optimal number of clusters k is the one that maximize the average silhouette over a range of possible values for k.
+fviz_nbclust(f, kmeans, method = "silhouette")+
+  labs(subtitle = "Silhouette method")
+# Gap statistic
+# The gap statistic compares the total within intra-cluster variation for different values of k with their expected values under null reference distribution of the data. The estimate of the optimal clusters will be value that maximize the gap statistic. This means that the clustering structure is far away from the random uniform distribution of points.
+fviz_nbclust(f, kmeans, nstart = 25,  method = "gap_stat", nboot = 50)+
+  labs(subtitle = "Gap statistic method")
+```
+# Clustree
+```{r}
+library(clustree)
+library(dplyr)
+library(ggraph)
+tmp <- NULL
+for (k in 1:2){
+  tmp[k] <- kmeans(f, k, nstart = 30)
+}
+df <- data.frame(tmp)
+# add a prefix to the column names
+colnames(df) <- seq(1:2
+                    )
+colnames(df) <- paste0("k",colnames(df))
+# get individual PCA
+df.pca <- prcomp(df, center = TRUE, scale. = FALSE)
+ind.coord <- df.pca$x
+ind.coord <- ind.coord[,1:2]
+df <- bind_cols(as.data.frame(df), as.data.frame(ind.coord))
+clustree(df, prefix = "k")
+```
+# Fitting K-Means to the dataset
+```{r}
+set.seed(29)
+model_km = kmeans(f, 2)
+#cluster cores
+y_km = model_km$cluster
+aggregate(f,by=list(y_km),FUN=mean)
+```
+# Visualising the clusters
+```{r}
+library(cluster)
+clusplot(f[,c('TotalExpend','HIV')],
+         y_km,
+         lines = 0,
+         shade = TRUE,
+         color = TRUE,
+         labels= 0,
+         plotchar = FALSE,
+         span = TRUE,
+         main = paste('Clusters of customers'),
+         xlab = 'TotalExpend',
+         ylab = 'HIV')
+```
+# Comparing to HC
+```{r}
+library(clusteval)
+cluster_similarity(y_hc,y_km)
+```
+##Kohonen maps
+```{r}
+f=f_sc
+f_matrix <- as.matrix(f)
+head (f)
+```
+# Fitting the NN
+```{r}
+set.seed(123)
+library(kohonen)
+som_grid <- somgrid(xdim = 10, ydim = 6, topo = "hexagonal") 
+som_model <- som(f_matrix, grid = som_grid, rlen = 1000,
+                 alpha = c(0.05,0.01), keep.data = TRUE)
+plot(som_model, type = "changes")
+```
+# Visualization
+```{r}
+#Palette
+coolBlueHotRed <- function(n, alpha = 1) {
+    rainbow(n, end = 4/6, alpha = alpha)[n:1] 
+}
+par(mfrow = c(1, 2))
+#Number of objects at sells
+plot(som_model, type = "counts", palette.name = coolBlueHotRed)
+#Distance to core
+plot(som_model, type = "quality", palette.name = coolBlueHotRed)
+```
+# Maps of the factors
+```{r}
+plot(som_model, type = "codes")
+```
+```{r}
+par(mfrow = c(2, 2))
+plot(som_model, type = "property", 
+     property = som_model$codes[[1]][,1], 
+     main = "Life",
+     palette.name = coolBlueHotRed)
+plot(som_model, type = "property", 
+     property = som_model$codes[[1]][,2],
+     main = "AM",
+     palette.name = coolBlueHotRed)
+plot(som_model, type = "property", 
+     property = som_model$codes[[1]][,3], 
+     main = "ID",
+     palette.name = coolBlueHotRed)
+plot(som_model, type = "property", 
+     property = som_model$codes[[1]][,4], 
+     main = "HepB",
+     palette.name = coolBlueHotRed)
+plot(som_model, type = "property", 
+     property = som_model$codes[[1]][,5], 
+     main = "Measles",
+     palette.name = coolBlueHotRed)
+plot(som_model, type = "property", 
+     property = som_model$codes[[1]][,6], 
+     main = "BMI",
+     palette.name = coolBlueHotRed)
+plot(som_model, type = "property", 
+     property = som_model$codes[[1]][,7], 
+     main = "U5D",
+     palette.name = coolBlueHotRed)
+plot(som_model, type = "property", 
+     property = som_model$codes[[1]][,8], 
+     main = "Polio",
+     palette.name = coolBlueHotRed)
+plot(som_model, type = "property", 
+     property = som_model$codes[[1]][,9], 
+     main = "TotalExpend",
+     palette.name = coolBlueHotRed)
+plot(som_model, type = "property", 
+     property = som_model$codes[[1]][,10], 
+     main = "Diphth",
+     palette.name = coolBlueHotRed)
+plot(som_model, type = "property", 
+     property = som_model$codes[[1]][,11], 
+     main = "HIV",
+     palette.name = coolBlueHotRed)
+plot(som_model, type = "property", 
+     property = som_model$codes[[1]][,12], 
+     main = "GDP",
+     palette.name = coolBlueHotRed)
+plot(som_model, type = "property", 
+     property = som_model$codes[[1]][,13], 
+     main = "P",
+     palette.name = coolBlueHotRed)
+plot(som_model, type = "property", 
+     property = som_model$codes[[1]][,14], 
+     main = "TH119",
+     palette.name = coolBlueHotRed)
+plot(som_model, type = "property", 
+     property = som_model$codes[[1]][,15], 
+     main = "TH59",
+     palette.name = coolBlueHotRed)
+plot(som_model, type = "property", 
+     property = som_model$codes[[1]][,16], 
+     main = "S",
+     palette.name = coolBlueHotRed)
+```
+# Clusters description
+```{r}
+mydata <- as.matrix(som_model$codes[[1]])
+#Use hierarchical clustering, k=4
+som_cluster <- cutree(hclust(dist(mydata)), 2)
+#Palette
+pretty_palette <- c("#1f77b4", '#ff7f0e', '#2ca02c',
+                    '#d62728', '#9467bd', '#8c564b', '#e377c2')
+#Colored clusters
+plot(som_model, type = "codes", 
+     bgcol = pretty_palette[som_cluster])
+add.cluster.boundaries(som_model, som_cluster)
+```
+```{r}
+aggregate(mydata,by=list(som_cluster),FUN=mean)
+```
